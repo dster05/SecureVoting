@@ -1,6 +1,7 @@
 package demo;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.net.*;
 import java.sql.*;
 
@@ -29,6 +30,7 @@ public class CTF
                 System.out.println("Assigning new thread for this CLA Request");
                 // create a new thread object
                 Thread t = new CLAClient(CLAs, dis, dos);
+
                 // Invoking the start() method
                 t.start();
             }
@@ -48,6 +50,7 @@ public class CTF
                 // create a new thread object
                 Thread t = new VoterClient(Voters, dis, dos);
                 // Invoking the start() method
+
                 t.start();
             }
             catch (Exception e){
@@ -95,10 +98,27 @@ class CLAClient extends Thread {
         String rValNo;
         String toreturn;
         try {
-            rFName = dis.readUTF();
-            rLName = dis.readUTF();
-            rSSN = dis.readUTF();
-            rValNo = dis.readUTF();
+            BigInteger[] privatekey = new BigInteger[2];
+            privatekey[0] = new BigInteger("5186956778070490725827198288315541331762271031265650622601024987979541794012230050170887439180262970650579632594342535142168252654372624364147663522497157006210177159575206484433286424574189064136785170951309530803436719815386187521529564560964125528938871900650317585138684464870738955908300215192905985166597649310390633398118521719240663894729103142002674580197566730520181909805212804075082906051795296619336355587217862866915301074975872807147655916358974785644728910464501247807868811156292097500860960572384299904596550258896341216307110693345495105349956029672180383718473289123756713684374076431026851216033");
+            privatekey[1] = new BigInteger("17753582724442527811288140733230179391013357165767451089225913120654500722857254143834801755365319179977395860841374637008610486208504344951729123617186569537334486841626064212733609530331613418795139876108629376356313252318547593657475170827843398367536515880912948942247041622900644487376658572915898484164941161260727325552067640163306435279239410888675253723694926047308643149337751414726481431225181009083236990615531581822568483040381258248811876064761108989882492177256526950112223820549016128731788080142279078473357661513655204232539166320510509913961021331102792212834388235587049941805586411066366998952377");
+            String eFName;
+            String eLName;
+            String eValNo;
+            String eSSN;
+            eFName = dis.readUTF();
+            eLName = dis.readUTF();
+            eSSN = dis.readUTF();
+            eValNo = dis.readUTF();
+            System.out.println("Received Encrypted Data form CLA...");
+            System.out.println(eFName);
+            System.out.println(eLName);
+            System.out.println(eValNo);
+            System.out.println(eSSN);
+            System.out.println("Decrypting Data... ");
+            rFName = RSA.decrypt(eFName,privatekey[0],privatekey[1]);
+            rLName = RSA.decrypt(eLName,privatekey[0],privatekey[1]);
+            rSSN = RSA.decrypt(eSSN,privatekey[0],privatekey[1]);
+            rValNo = RSA.decrypt(eValNo,privatekey[0],privatekey[1]);
             System.out.println("Received FName From CLA: " + rFName);
             System.out.println("Received LName From CLA: " + rLName);
             System.out.println("Received SSN From CLA: " + rSSN);
@@ -186,22 +206,38 @@ class VoterClient extends Thread {
 
     @Override
     public void run() {
+        BigInteger[] privatekey = new BigInteger[2];
+        privatekey[0] = new BigInteger("5186956778070490725827198288315541331762271031265650622601024987979541794012230050170887439180262970650579632594342535142168252654372624364147663522497157006210177159575206484433286424574189064136785170951309530803436719815386187521529564560964125528938871900650317585138684464870738955908300215192905985166597649310390633398118521719240663894729103142002674580197566730520181909805212804075082906051795296619336355587217862866915301074975872807147655916358974785644728910464501247807868811156292097500860960572384299904596550258896341216307110693345495105349956029672180383718473289123756713684374076431026851216033");
+        privatekey[1] = new BigInteger("17753582724442527811288140733230179391013357165767451089225913120654500722857254143834801755365319179977395860841374637008610486208504344951729123617186569537334486841626064212733609530331613418795139876108629376356313252318547593657475170827843398367536515880912948942247041622900644487376658572915898484164941161260727325552067640163306435279239410888675253723694926047308643149337751414726481431225181009083236990615531581822568483040381258248811876064761108989882492177256526950112223820549016128731788080142279078473357661513655204232539166320510509913961021331102792212834388235587049941805586411066366998952377");
         String ValNo;
         char vote;
         String toreturn;
         try {
-            ValNo = dis.readUTF();
-            vote = dis.readChar();
-            System.out.println("Received From Voter: " + ValNo + " " +vote);
+            String eValNo;
+            String evote;
+            eValNo = dis.readUTF();
+            evote = dis.readUTF();
+            System.out.println("Received Encrypted Message from Voter..");
+            System.out.println(eValNo);
+            System.out.println(evote);
+            System.out.println("Decrypting Data..");
+            ValNo = RSA.decrypt(eValNo, privatekey[0], privatekey[1]);
+            vote = (RSA.decrypt(evote, privatekey[0], privatekey[1])).charAt(0);
+            System.out.println("Received ValNo: " + ValNo);
+            System.out.println("Received Vote: " +vote);
             if( vote == 'e' || vote == 'E'){
                 System.out.println("Voting Ended..");
                 toreturn=getResult();
-                dos.writeUTF(toreturn);
+                String etoreturn;
+                etoreturn = RSA.encrypt(toreturn,privatekey[0],privatekey[1]);
+                dos.writeUTF(etoreturn);
                 System.exit(0);
             }
             else {
                 toreturn = connectDB(ValNo, vote);
-                dos.writeUTF(toreturn);
+                String etoreturn;
+                etoreturn = RSA.encrypt(toreturn,privatekey[0],privatekey[1]);
+                dos.writeUTF(etoreturn);
             }
             this.dis.close();
             this.dos.close();
