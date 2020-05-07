@@ -20,3 +20,11 @@ Your design should use two central facilities: Central Tabulating Facility (CTF)
  
 
 All the data sent between a voter and CLA, between CLA and CTF, and between a voter and CTF should be encrypted. For simplicity, RSA will be used for encryption and decryption. Suppose each party involved in the protocol has a public key/private key pair. All voters know the public keys of CTF and CLA. CTF and CLA know the public key of each other
+
+
+
+
+TO Run Project
+Compile Demo Package.
+Run CTF then CLA then Voter. and make sure to user jdbc connecter as this project uses Database.
+Run voter for all voters.
